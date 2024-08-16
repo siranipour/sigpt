@@ -32,6 +32,9 @@ class Transformer(nn.Module):
         )
         self.lm_head = nn.Linear(config.n_embed, config.vocab_size, bias=False)
 
+        # Weight sharing semantics for embedding/unembedding layers
+        self.transformer.token_embedding.weight = self.lm_head.weight
+
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         B, T = idx.shape
 
