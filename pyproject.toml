@@ -11,6 +11,7 @@ torch = "^2.4.0"
 tiktoken = "^0.7.0"
 fastapi = "^0.112.1"
 uvicorn = "^0.30.6"
+numpy = "^2.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
