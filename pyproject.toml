@@ -12,11 +12,17 @@ tiktoken = "^0.7.0"
 fastapi = "^0.112.1"
 uvicorn = "^0.30.6"
 numpy = "^2.0.1"
+better-profanity = "^0.7.0"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8.0"
 pytest = "^8.3.2"
+ipython = "^8.26.0"
+
+
+[tool.poetry.group.train.dependencies]
+datasets = "^2.21.0"
 
 [build-system]
 requires = ["poetry-core"]
