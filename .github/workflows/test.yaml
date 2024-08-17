@@ -21,4 +21,4 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
       - name: Run CI
-        run: pytest
+        run: poetry run python -m pytest
