@@ -19,5 +19,5 @@ def test_model_output(seed: int=1234):
     mdl_output = sample.generate(mdl, INPUT_PROMPT, batches=2, max_samples=5)
 
     assert len(mdl_output) == 2
-    assert all(gen == exp for gen, exp in zip(mdl_output, EXPECTED_OUTPUTS))
+    assert all(gen == exp for gen, exp in list(zip(mdl_output, EXPECTED_OUTPUTS)))
 
