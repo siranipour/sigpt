@@ -17,6 +17,7 @@ on:
 env:
   PROJECT_ID: t-pointer-430919-v3
   SERVICE: sigpt-api
+  NAME: sigpt-api
   GAR_LOCATION: europe-west2
   REGION: europe-west2
 
@@ -50,8 +51,8 @@ jobs:
       - name: Build and Push Container
         run: |-
           gcloud auth configure-docker "${{ env.GAR_LOCATION }}-docker.pkg.dev"
-          docker build -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/website:${{ github.sha }}" ./
-          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/website:${{ github.sha }}"
+          docker build -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.NAME }}:${{ github.sha }}" ./
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.NAME }}:${{ github.sha }}"
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -59,7 +60,7 @@ jobs:
         with:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
-          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/website:${{ github.sha }}
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.NAME }}:${{ github.sha }}
           flags: '--port=8000 --allow-unauthenticated'
 
       - name: Show Output
