@@ -12,6 +12,7 @@ def generate_tokens(
 ) -> torch.Tensor:
     generations = 0
     with torch.no_grad():
+        model.eval()
         while generations < max_samples:
             logits = model(idx)  # (B, T, vocab_size)
             # We use the last token for prediction
