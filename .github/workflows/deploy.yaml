@@ -61,7 +61,7 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}/${{ env.NAME }}:${{ github.sha }}
-          flags: '--port=8000 --allow-unauthenticated --memory 1Gi'
+          flags: '--port=8000 --allow-unauthenticated --memory 2Gi'
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
