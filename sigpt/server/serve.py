@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Optional
 
 from better_profanity import profanity
 from fastapi import FastAPI, HTTPException
@@ -18,7 +17,7 @@ app = FastAPI()
 
 @app.get("/sigpt/")
 def generate_tokens(
-    prompt: str, batches: Optional[int]=1, max_len: Optional[int]=20,
+    prompt: str, batches: int=1, max_len: int=20,
 ) -> list[ModelResponse]:
     check_request(prompt, batches, max_len)
     mdl = architecture.Transformer(architecture.GPTConfig)
