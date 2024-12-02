@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from sigpt.model import architecture, sample
+from sigpt import architecture, sample
 
 INPUT_PROMPT = "Hello, I am language model and"
 

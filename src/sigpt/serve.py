@@ -3,7 +3,7 @@ import dataclasses
 from better_profanity import profanity
 from fastapi import FastAPI, HTTPException
 
-from sigpt.model import architecture, sample
+from sigpt import architecture, sample
 
 MAX_BATCHES = 10
 MAX_GEN_LEN = 100

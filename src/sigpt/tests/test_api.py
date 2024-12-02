@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from sigpt.server import serve
+from sigpt import serve
 
 BASE_PROMPT = "Hello, I am a language model and"
 

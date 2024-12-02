@@ -28,4 +28,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["uvicorn", "sigpt.server.serve:app", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["uvicorn", "sigpt.serve:app", "--port", "8000", "--host", "0.0.0.0"]
