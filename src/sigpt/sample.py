@@ -1,8 +1,30 @@
 import tiktoken
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+def generate(
+    model: nn.Module,
+    prompt: str,
+    batches: int,
+    max_samples: int,
+    k: int = 50,
+    encoder: tiktoken.Encoding | None = None,
+) -> list[str]:
+    encoder = encoder or tiktoken.get_encoding("gpt2")
+    encoded_prompt = torch.tensor(encoder.encode(prompt), dtype=torch.long)
+    encoded_prompt = torch.tile(encoded_prompt, (batches, 1))
+
+    generated_tokens = generate_tokens(model, encoded_prompt, max_samples, k)
+
+    # The generated response will be invalid if the model had generated and
+    # eot_token
+    return [
+        encoder.decode(truncate_to_eot(i.tolist(), encoder.eot_token))
+        for i in generated_tokens
+    ]
+
 
 def generate_tokens(
     model: nn.Module,
@@ -28,17 +50,5 @@ def generate_tokens(
     return idx
 
 
-def generate(
-    model: nn.Module,
-    prompt: str,
-    batches: int,
-    max_samples: int,
-    k: int = 50,
-    encoder=None,
-) -> list[str]:
-    encoder = encoder or tiktoken.get_encoding("gpt2")
-    encoded_prompt = torch.tensor(encoder.encode(prompt), dtype=torch.long)
-    encoded_prompt = torch.tile(encoded_prompt, (batches, 1))
-
-    generated_tokens = generate_tokens(model, encoded_prompt, max_samples, k)
-    return [encoder.decode(i.tolist()) for i in generated_tokens]
+def truncate_to_eot(tokens: list[int], eot_token: int) -> list[int]:
+    return tokens[: tokens.index(eot_token)] if eot_token in tokens else tokens
