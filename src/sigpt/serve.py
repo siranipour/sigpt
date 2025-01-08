@@ -15,7 +15,7 @@ class ModelResponse:
 
 app = FastAPI()
 
-@app.get("/sigpt/")
+@app.post("/sigpt/")
 def generate_tokens(
     prompt: str, batches: int=1, max_len: int=20,
 ) -> list[ModelResponse]:
