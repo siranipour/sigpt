@@ -3,7 +3,7 @@ import dataclasses
 from better_profanity import profanity
 from fastapi import FastAPI, HTTPException
 
-from sigpt import architecture, sample
+from sigpt import architecture, config, sample
 
 MAX_BATCHES = 10
 MAX_GEN_LEN = 100
@@ -20,7 +20,7 @@ def generate_tokens(
     prompt: str, batches: int=1, max_len: int=20,
 ) -> list[ModelResponse]:
     check_request(prompt, batches, max_len)
-    mdl = architecture.Transformer(architecture.GPTConfig)
+    mdl = architecture.Transformer(config.get_gpt_config())
     generated = sample.generate(mdl, prompt, batches, max_len)
     return [ModelResponse(prompt, gen.lstrip(prompt)) for gen in generated]
 

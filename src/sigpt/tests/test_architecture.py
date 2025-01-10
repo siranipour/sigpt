@@ -1,7 +1,6 @@
-import pytest
 import torch
 
-from sigpt import architecture, sample
+from sigpt import architecture, config, sample
 
 INPUT_PROMPT = "Hello, I am language model and"
 
@@ -14,7 +13,7 @@ def test_model_output(seed: int=1234):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
 
-    mdl = architecture.Transformer(architecture.GPTConfig)
+    mdl = architecture.Transformer(config.get_gpt_config())
 
     mdl_output = sample.generate(mdl, INPUT_PROMPT, batches=2, max_samples=5)
 

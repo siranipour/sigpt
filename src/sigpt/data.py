@@ -1,27 +1,14 @@
-import dataclasses
-import functools
-
 import datasets
 import tiktoken
 import torch
 from datasets.distributed import split_dataset_by_node
 from torch.utils.data import DataLoader, IterableDataset
 
+from sigpt.config import DDPConfig
+
 DATASET_PATH: str = "allenai/c4"
 DATASET_NAME: str = "en"
 FEATURE_NAME: str = "text"
-
-
-@dataclasses.dataclass
-class DDPConfig:
-    rank: int
-    world_size: int
-
-    def __post_init__(self):
-        if self.rank not in range(1, self.world_size + 1):
-            raise ValueError(
-                f"Rank {self.rank} must be in the range [1, {self.world_size})"
-            )
 
 
 def fetch_dataset_loader(
@@ -68,9 +55,7 @@ class BlockSizedDataset(IterableDataset):
         buffer = []
         for datum in self._ds:
             while len(buffer) < self.block_size:
-                encoded = self.encoder.encode(datum[FEATURE_NAME]) + [
-                    self.encoder.eot_token
-                ]
+                encoded = self.encoder.encode(datum[FEATURE_NAME]) + [self.encoder.eot_token]
                 buffer.extend(encoded)
             yield torch.tensor(buffer[: self.block_size], dtype=torch.long)
             buffer = buffer[self.block_size :]

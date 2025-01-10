@@ -1,24 +1,11 @@
-import dataclasses
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-@dataclasses.dataclass
-class Config:
-    block_size: int
-    vocab_size: int
-    n_embed: int
-    n_heads: int
-    n_layers: int
-
-
-GPTConfig = Config(block_size=1024, vocab_size=50257, n_layers=12, n_heads=12, n_embed=768)
-
+from sigpt.config import ModelConfig
 
 class Transformer(nn.Module):
-    def __init__(self, config: Config):
+    def __init__(self, config: ModelConfig):
         super().__init__()
         self.config = config
 
@@ -52,7 +39,7 @@ class Transformer(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, config: Config):
+    def __init__(self, config: ModelConfig):
         super().__init__()
 
         self.ln_1 = nn.LayerNorm(config.n_embed)
@@ -67,7 +54,7 @@ class Block(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, config: Config):
+    def __init__(self, config: ModelConfig):
         super().__init__()
         self.config = config
 
@@ -83,7 +70,7 @@ class MLP(nn.Module):
 
 
 class CausalSelfAttention(nn.Module):
-    def __init__(self, config: Config):
+    def __init__(self, config: ModelConfig):
         super().__init__()
         self.config = config
         self.n_embed = config.n_embed
