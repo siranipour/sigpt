@@ -1,14 +1,16 @@
 import enum
+import math
 import os
 
 import tiktoken
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from sigpt import architecture, data
-from sigpt.config import DDPConfig, ModelConfig
+from sigpt.config import DDPConfig, ModelConfig, SchedulerConfig
 
 
 class Device(enum.Enum):
@@ -26,13 +28,15 @@ class Device(enum.Enum):
 
 def train(
     model_config: ModelConfig,
+    scheduler_config: SchedulerConfig,
     encoder: tiktoken.Encoding,
-    opt: torch.optim.Optimizer,
     batch_size: int,
     device: Device,
     ddp: DDPConfig | None = None,
 ) -> None:
     model = prepare_model(model_config, device, ddp)
+    optimizer = prepare_optimizer(model)
+    scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
     train_dl = data.fetch_dataset_loader(
@@ -48,6 +52,11 @@ def train(
 
         logits = model(x)
         loss = compute_loss(logits, y)
+
+        _ = optimizer.zero_grad()
+        _ = loss.backward()
+        _ = optimizer.step()
+        _ = scheduler.step()
 
 
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
@@ -67,8 +76,24 @@ def prepare_model(
     return model
 
 
-def prepare_optimizer() -> torch.optim.Optimizer:
-    pass
+def prepare_optimizer(model: nn.Module) -> optim.Optimizer:
+    return optim.Adam(model.parameters())
+
+
+def prepare_scheduler(
+    optimizer: torch.optim.Optimizer, scheduler_config: SchedulerConfig
+) -> optim.lr_scheduler.LRScheduler:
+    c = scheduler_config
+
+    def lr_lambda(current_step: int) -> float:
+        if current_step < c.warmup_steps:
+            return c.max_lr * (current_step + 1) / (c.warmup_steps + 1)
+        if current_step > c.total_steps:
+            return c.min_lr
+        T = (current_step - c.warmup_steps) / (c.total_steps - c.warmup_steps)
+        return c.min_lr + 0.5 * (c.max_lr - c.min_lr) * (1 + math.cos(math.pi * T))
+
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
 def get_device() -> Device:
