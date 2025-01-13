@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from sigpt import architecture, data
-from sigpt.config import DDPConfig, ModelConfig, SchedulerConfig
+from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
 
 
 class Device(enum.Enum):
@@ -28,6 +28,7 @@ class Device(enum.Enum):
 
 def train(
     model_config: ModelConfig,
+    optimizer_config: OptimizerConfig,
     scheduler_config: SchedulerConfig,
     encoder: tiktoken.Encoding,
     batch_size: int,
@@ -35,7 +36,7 @@ def train(
     ddp: DDPConfig | None = None,
 ) -> None:
     model = prepare_model(model_config, device, ddp)
-    optimizer = prepare_optimizer(model)
+    optimizer = prepare_optimizer(model, optimizer_config)
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
@@ -76,8 +77,8 @@ def prepare_model(
     return model
 
 
-def prepare_optimizer(model: nn.Module) -> optim.Optimizer:
-    return optim.Adam(model.parameters())
+def prepare_optimizer(model: nn.Module, optimizer_config: OptimizerConfig) -> optim.Optimizer:
+    return optim.Adam(model.parameters(), betas=(optimizer_config.beta1, optimizer_config.beta2))
 
 
 def prepare_scheduler(

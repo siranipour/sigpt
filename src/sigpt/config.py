@@ -21,6 +21,12 @@ class ModelConfig:
 
 
 @dataclasses.dataclass
+class OptimizerConfig:
+    beta1: float
+    beta2: float
+
+
+@dataclasses.dataclass
 class SchedulerConfig:
     warmup_steps: int
     total_steps: int
@@ -28,8 +34,13 @@ class SchedulerConfig:
     max_lr: float
 
 
+def get_optimizer_config() -> OptimizerConfig:
+    return OptimizerConfig(beta1=0.9, beta2=0.95)
+
+
 def get_scheduler_config() -> SchedulerConfig:
     return SchedulerConfig(warmup_steps=2000, total_steps=600000, min_lr=6e-5, max_lr=6e-4)
+
 
 def get_gpt_config() -> ModelConfig:
     return ModelConfig(block_size=1024, vocab_size=50257, n_layers=12, n_heads=12, n_embed=768)
