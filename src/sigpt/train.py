@@ -6,9 +6,9 @@ import tiktoken
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.distributed import destroy_process_group, init_process_group
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
 
 from sigpt import architecture, data
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
@@ -58,7 +58,9 @@ def train(
             example = next(data_gen)
             x, y = example[..., :-1], example[..., 1:]
             if device == Device.GPU:
-                x, y = map(lambda t: t.pin_memory().to(device.get_target(), non_blocking=True), (x, y))
+                x, y = map(
+                    lambda t: t.pin_memory().to(device.get_target(), non_blocking=True), (x, y)
+                )
             else:
                 x, y = map(lambda t: t.to(device.get_target()), (x, y))
 
