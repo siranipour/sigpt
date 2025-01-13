@@ -80,11 +80,30 @@ def prepare_model(
 def prepare_optimizer(
     model: nn.Module, optimizer_config: OptimizerConfig, scheduler_config: SchedulerConfig
 ) -> optim.Optimizer:
+    parameters = get_weight_decay_params(model, optimizer_config.weight_decay)
     return optim.AdamW(
-        model.parameters(),
+        parameters,
         lr=scheduler_config.max_lr,
         betas=(optimizer_config.beta1, optimizer_config.beta2),
+        fused=True,
     )
+
+
+def get_weight_decay_params(model: nn.Module, weight_decay: float) -> list[dict]:
+    to_decay, not_to_decay = [], []
+    filter_rule = lambda name: "weight" in name and "ln" not in name
+    for name, tensor in model.named_parameters():
+        if not tensor.requires_grad:
+            continue
+        if filter_rule(name):
+            assert tensor.ndim >= 2
+            to_decay.append(tensor)
+        else:
+            not_to_decay.append(tensor)
+    return [
+        {"params": to_decay, "weight_decay": weight_decay},
+        {"params": not_to_decay, "weight_decay": 0.0},
+    ]
 
 
 def prepare_scheduler(

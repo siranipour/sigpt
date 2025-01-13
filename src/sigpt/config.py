@@ -22,6 +22,7 @@ class ModelConfig:
 
 @dataclasses.dataclass
 class OptimizerConfig:
+    weight_decay: float
     beta1: float
     beta2: float
 
@@ -35,7 +36,7 @@ class SchedulerConfig:
 
 
 def get_optimizer_config() -> OptimizerConfig:
-    return OptimizerConfig(beta1=0.9, beta2=0.95)
+    return OptimizerConfig(weight_decay=0.1, beta1=0.9, beta2=0.95)
 
 
 def get_scheduler_config() -> SchedulerConfig:
