@@ -2,7 +2,8 @@ import tiktoken
 
 from sigpt import config, train
 
-BATCH_SIZE = 1
+MICRO_BATCH_SIZE = 1
+BATCH_SIZE = 2 ** 2
 
 if __name__ == "__main__":
     ddp = train.get_ddp_config()
@@ -13,4 +14,4 @@ if __name__ == "__main__":
     device = train.Device.CPU
     encoder = tiktoken.get_encoding("gpt2")
 
-    train.train(model_config, optimizer_config, scheduler_config, encoder, BATCH_SIZE, device, ddp)
+    train.train(model_config, optimizer_config, scheduler_config, encoder, MICRO_BATCH_SIZE, BATCH_SIZE, device, ddp)

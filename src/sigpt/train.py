@@ -31,10 +31,12 @@ def train(
     optimizer_config: OptimizerConfig,
     scheduler_config: SchedulerConfig,
     encoder: tiktoken.Encoding,
+    micro_batch_size: int,
     batch_size: int,
     device: Device,
     ddp: DDPConfig | None = None,
 ) -> None:
+    grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
     model = prepare_model(model_config, device, ddp)
     optimizer = prepare_optimizer(model, optimizer_config, scheduler_config)
     scheduler = prepare_scheduler(optimizer, scheduler_config)
@@ -43,19 +45,25 @@ def train(
     train_dl = data.fetch_dataset_loader(
         "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
     )
+    data_gen = iter(train_dl)
 
-    for example in train_dl:
-        x, y = example[..., :-1], example[..., 1:]
-        if device == Device.GPU:
-            x, y = map(lambda t: t.pin_memory().to(device.get_target(), non_blocking=True), (x, y))
-        else:
-            x, y = map(lambda t: t.to(device.get_target()), (x, y))
-
-        logits = model(x)
-        loss = compute_loss(logits, y)
-
+    # TODO: think about how to break from here
+    while True:
         _ = optimizer.zero_grad()
-        _ = loss.backward()
+
+        for _ in range(grad_accum_steps):
+            example = next(data_gen)
+            x, y = example[..., :-1], example[..., 1:]
+            if device == Device.GPU:
+                x, y = map(lambda t: t.pin_memory().to(device.get_target(), non_blocking=True), (x, y))
+            else:
+                x, y = map(lambda t: t.to(device.get_target()), (x, y))
+
+            logits = model(x)
+            loss = compute_loss(logits, y)
+            loss /= grad_accum_steps
+
+            _ = loss.backward()
         _ = optimizer.step()
         _ = scheduler.step()
 
@@ -141,3 +149,11 @@ def get_ddp_config() -> DDPConfig | None:
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
     return DDPConfig(local_rank, rank, world_size)
+
+
+def compute_gradient_accumulation_steps(
+    micro_batch_size: int, batch_size: int, ddp: DDPConfig | None = None
+) -> int:
+    world_size = ddp.world_size if ddp is not None else 1
+    assert batch_size % (micro_batch_size * world_size) == 0
+    return batch_size // (micro_batch_size * world_size)
