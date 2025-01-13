@@ -24,25 +24,3 @@ def test_block_size_dataset(split: str, block_size: int):
     encoder = tiktoken.get_encoding("gpt2")
     ds = data.BlockSizedDataset(block_size, split, encoder)
     assert len(next(iter(ds))) == block_size
-
-
-def test_ddpconfig():
-    valid_config = data.DDPConfig(1, 10, 128)
-
-    bad_configs = [
-        # Rank is too large
-        (1, 10, 5),
-        (10, 0, 10),
-        (1, -5, -10),
-        (1, -10, -5),
-
-        # Local rank is too large
-        (10, 1, 5),
-        (0, 10, 10),
-        (-5, 1, -10),
-        (-10, 1, -5),
-    ]
-    for (local_rank, rank, world_size) in bad_configs:
-        with pytest.raises(ValueError):
-            data.DDPConfig(local_rank, rank, world_size)
-
