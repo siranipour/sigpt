@@ -1,4 +1,5 @@
 import tiktoken
+
 from sigpt import config, train
 
 BATCH_SIZE = 1
@@ -6,8 +7,10 @@ BATCH_SIZE = 1
 if __name__ == "__main__":
     ddp = train.get_ddp_config()
     model_config = config.get_gpt_config()
+    optimizer_config = config.get_optimizer_config()
+    scheduler_config = config.get_scheduler_config()
     device = train.get_device()
-    device  = train.Device.CPU
+    device = train.Device.CPU
     encoder = tiktoken.get_encoding("gpt2")
 
-    train.train(model_config, encoder, BATCH_SIZE, device, ddp)
+    train.train(model_config, optimizer_config, scheduler_config, encoder, BATCH_SIZE, device, ddp)
