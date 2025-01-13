@@ -80,7 +80,7 @@ def prepare_model(
 def prepare_optimizer(
     model: nn.Module, optimizer_config: OptimizerConfig, scheduler_config: SchedulerConfig
 ) -> optim.Optimizer:
-    return optim.Adam(
+    return optim.AdamW(
         model.parameters(),
         lr=scheduler_config.max_lr,
         betas=(optimizer_config.beta1, optimizer_config.beta2),
