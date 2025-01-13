@@ -36,7 +36,7 @@ def train(
     ddp: DDPConfig | None = None,
 ) -> None:
     model = prepare_model(model_config, device, ddp)
-    optimizer = prepare_optimizer(model, optimizer_config)
+    optimizer = prepare_optimizer(model, optimizer_config, scheduler_config)
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
@@ -77,8 +77,14 @@ def prepare_model(
     return model
 
 
-def prepare_optimizer(model: nn.Module, optimizer_config: OptimizerConfig) -> optim.Optimizer:
-    return optim.Adam(model.parameters(), betas=(optimizer_config.beta1, optimizer_config.beta2))
+def prepare_optimizer(
+    model: nn.Module, optimizer_config: OptimizerConfig, scheduler_config: SchedulerConfig
+) -> optim.Optimizer:
+    return optim.Adam(
+        model.parameters(),
+        lr=scheduler_config.max_lr,
+        betas=(optimizer_config.beta1, optimizer_config.beta2),
+    )
 
 
 def prepare_scheduler(
