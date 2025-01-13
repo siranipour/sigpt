@@ -51,7 +51,8 @@ def train(
 
 
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-    return F.cross_entropy(logits.reshape(-1), targets.reshape(-1))
+    B, T, C = logits.shape
+    return F.cross_entropy(logits.reshape(B * T, C), targets.reshape(B * T))
 
 
 def prepare_model(
