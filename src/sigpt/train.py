@@ -73,7 +73,7 @@ def prepare_model(
         model = torch.compile(model)
     model.to(device.get_target())
     if ddp is not None:
-        model = DDP(model, device_ids=[ddp.rank])
+        model = DDP(model, device_ids=[ddp.local_rank])
     return model
 
 
@@ -131,12 +131,13 @@ def get_device() -> Device:
 
 
 def is_ddp() -> bool:
-    return ("RANK" in os.environ) and ("WORLD_SIZE" in os.environ)
+    return ("LOCAL_RANK" in os.environ) and ("RANK" in os.environ) and ("WORLD_SIZE" in os.environ)
 
 
 def get_ddp_config() -> DDPConfig | None:
     if not is_ddp():
         return None
+    local_rank = int(os.environ["LOCAL_RANK"])
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
-    return DDPConfig(rank, world_size)
+    return DDPConfig(local_rank, rank, world_size)

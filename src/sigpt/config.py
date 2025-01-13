@@ -3,11 +3,14 @@ import dataclasses
 
 @dataclasses.dataclass
 class DDPConfig:
+    local_rank: int
     rank: int
     world_size: int
 
     def __post_init__(self):
         if self.rank not in range(1, self.world_size + 1):
+            raise ValueError(f"Rank {self.rank} must be in the range [1, {self.world_size})")
+        if self.local_rank not in range(1, self.world_size + 1):
             raise ValueError(f"Rank {self.rank} must be in the range [1, {self.world_size})")
 
 
