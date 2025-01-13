@@ -51,7 +51,7 @@ def train(
     while True:
         _ = optimizer.zero_grad()
 
-        for _ in range(grad_accum_steps):
+        for micro_step in range(grad_accum_steps):
             example = next(data_gen)
             x, y = example[..., :-1], example[..., 1:]
             if device == Device.GPU:
@@ -60,17 +60,23 @@ def train(
                 x, y = map(lambda t: t.to(device.get_target()), (x, y))
 
             logits = model(x)
-            loss = compute_loss(logits, y)
-            loss /= grad_accum_steps
+            loss = compute_loss(logits, y, grad_accum_steps)
 
-            _ = loss.backward()
+            if ddp is not None:
+                if micro_step != grad_accum_steps - 1:
+                    with model.no_sync():
+                        _ = loss.backward()
+                else:
+                    _ = loss.backward()
+            else:
+                _ = loss.backward()
         _ = optimizer.step()
         _ = scheduler.step()
 
 
-def compute_loss(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> torch.Tensor:
     B, T, C = logits.shape
-    return F.cross_entropy(logits.reshape(B * T, C), targets.reshape(B * T))
+    return F.cross_entropy(logits.reshape(B * T, C), targets.reshape(B * T)) / norm
 
 
 def prepare_model(

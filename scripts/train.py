@@ -2,8 +2,8 @@ import tiktoken
 
 from sigpt import config, train
 
-MICRO_BATCH_SIZE = 1
-BATCH_SIZE = 2 ** 2
+MICRO_BATCH_SIZE = 4
+BATCH_SIZE = 4
 
 if __name__ == "__main__":
     ddp = train.get_ddp_config()
