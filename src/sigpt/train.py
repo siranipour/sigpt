@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed import init_process_group, destroy_process_group
 
 from sigpt import architecture, data
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
@@ -36,6 +37,8 @@ def train(
     device: Device,
     ddp: DDPConfig | None = None,
 ) -> None:
+    if ddp is not None:
+        init_process_group(backend="nccl")
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
     model = prepare_model(model_config, device, ddp)
     optimizer = prepare_optimizer(model, optimizer_config, scheduler_config)
@@ -72,6 +75,9 @@ def train(
                 _ = loss.backward()
         _ = optimizer.step()
         _ = scheduler.step()
+
+    if ddp is not None:
+        destroy_process_group()
 
 
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> torch.Tensor:
