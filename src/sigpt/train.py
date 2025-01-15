@@ -1,6 +1,7 @@
 import enum
 import math
 import os
+import time
 
 import tiktoken
 import torch
@@ -47,6 +48,12 @@ def train(
         init_process_group(backend="nccl")
 
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
+    tokens_per_iter = (
+        grad_accum_steps
+        * batch_size
+        * model_config.block_size
+        * (1 if ddp is None else ddp.world_size)
+    )
     model = prepare_model(model_config, device, ddp)
 
     if is_main_process:
@@ -64,6 +71,7 @@ def train(
     idx = 0
     # TODO: think about how to break from here
     while True:
+        timer_start = time.time()
         _ = optimizer.zero_grad()
 
         for micro_step in range(grad_accum_steps):
@@ -90,11 +98,19 @@ def train(
         )
         _ = optimizer.step()
         _ = scheduler.step()
+        timer_stop = time.time()
 
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
             (lr,) = set(scheduler.get_last_lr())
+            dt = timer_stop - timer_start
             wandb.log(
-                {"loss": loss.item(), "lr": lr, "unclipped_grad_norm": unclipped_grad_norm},
+                {
+                    "train_loss": loss.item(),
+                    "lr": lr,
+                    "unclipped_grad_norm": unclipped_grad_norm,
+                    "dt/s": round(dt, 2),
+                    "tokens/s": round(tokens_per_iter / dt, 2),
+                },
                 step=idx,
             )
 
