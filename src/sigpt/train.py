@@ -10,8 +10,11 @@ from torch.distributed import destroy_process_group, init_process_group
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+import wandb
 from sigpt import architecture, data
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
+
+EVAL_FREQUENCY: int = 2000
 
 
 class Device(enum.Enum):
@@ -36,12 +39,19 @@ def train(
     batch_size: int,
     device: Device,
     ddp: DDPConfig | None = None,
+    is_main_process: bool = True,
 ) -> None:
     torch.set_float32_matmul_precision("high")
+
     if ddp is not None:
         init_process_group(backend="nccl")
+
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
     model = prepare_model(model_config, device, ddp)
+
+    if is_main_process:
+        wandb.watch(model, log_freq=EVAL_FREQUENCY)
+
     optimizer = prepare_optimizer(model, optimizer_config, scheduler_config)
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
@@ -51,6 +61,7 @@ def train(
     )
     data_gen = iter(train_dl)
 
+    idx = 0
     # TODO: think about how to break from here
     while True:
         _ = optimizer.zero_grad()
@@ -76,6 +87,12 @@ def train(
                 _ = loss.backward()
         _ = optimizer.step()
         _ = scheduler.step()
+
+        if is_main_process and (idx % EVAL_FREQUENCY == 0):
+            (lr,) = set(scheduler.get_last_lr())
+            wandb.log({"loss": loss.item(), "lr": lr}, step=idx)
+
+        idx += 1
 
     if ddp is not None:
         destroy_process_group()
