@@ -14,7 +14,8 @@ EXPECTED_OUTPUTS_WITH_FLASH_ATTENTION = [
     "Hello, I am language model andBalance Gazette sabotageKings mature",
 ]
 
-def test_model_output(seed: int=1234):
+
+def test_model_output(seed: int = 1234):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
 
@@ -27,5 +28,6 @@ def test_model_output(seed: int=1234):
     if not architecture.USE_FLASH_ATTENTION:
         assert all(gen == exp for gen, exp in zip(mdl_output, EXPECTED_OUTPUTS_NO_FLASH_ATTENTION))
     else:
-        assert all(gen == exp for gen, exp in zip(mdl_output, EXPECTED_OUTPUTS_WITH_FLASH_ATTENTION))
-
+        assert all(
+            gen == exp for gen, exp in zip(mdl_output, EXPECTED_OUTPUTS_WITH_FLASH_ATTENTION)
+        )

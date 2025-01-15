@@ -14,4 +14,13 @@ if __name__ == "__main__":
     device = train.Device.CPU
     encoder = tiktoken.get_encoding("gpt2")
 
-    train.train(model_config, optimizer_config, scheduler_config, encoder, MICRO_BATCH_SIZE, BATCH_SIZE, device, ddp)
+    train.train(
+        model_config,
+        optimizer_config,
+        scheduler_config,
+        encoder,
+        MICRO_BATCH_SIZE,
+        BATCH_SIZE,
+        device,
+        ddp,
+    )

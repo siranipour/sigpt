@@ -21,8 +21,7 @@ def generate(
     # The generated response will be invalid if the model had generated and
     # eot_token
     return [
-        encoder.decode(truncate_to_eot(i.tolist(), encoder.eot_token))
-        for i in generated_tokens
+        encoder.decode(truncate_to_eot(i.tolist(), encoder.eot_token)) for i in generated_tokens
     ]
 
 
