@@ -34,7 +34,8 @@ def fetch_dataset_loader(
 class BlockSizedDataset(IterableDataset):
     # Buffer size to facilitate shuffling the dataset.
     # This buffer is populated in a deterministic manner, but samples are drawn randomly.
-    BUFFER_SIZE = 1000
+    BUFFER_SIZE: int = 1000
+    SEED: int = 42
 
     def __init__(
         self,
@@ -51,7 +52,7 @@ class BlockSizedDataset(IterableDataset):
         self._ds = (
             datasets.load_dataset(DATASET_PATH, DATASET_NAME, streaming=True, split=split)
             .select_columns(FEATURE_NAME)
-            .shuffle(buffer_size=self.BUFFER_SIZE)
+            .shuffle(seed=self.SEED, buffer_size=self.BUFFER_SIZE)
         )
 
         if ddp is not None:
