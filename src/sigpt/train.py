@@ -107,6 +107,7 @@ def prepare_model(
     model_config: ModelConfig, device: Device, ddp: DDPConfig | None = None
 ) -> nn.Module:
     model = architecture.Transformer(model_config)
+    model.train()
     if device != Device.MPS:
         model = torch.compile(model)
     model.to(device.get_target())
