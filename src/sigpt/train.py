@@ -37,6 +37,7 @@ def train(
     device: Device,
     ddp: DDPConfig | None = None,
 ) -> None:
+    torch.set_float32_matmul_precision("high")
     if ddp is not None:
         init_process_group(backend="nccl")
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
@@ -64,8 +65,9 @@ def train(
             else:
                 x, y = map(lambda t: t.to(device.get_target()), (x, y))
 
-            logits = model(x)
-            loss = compute_loss(logits, y, grad_accum_steps)
+            with torch.autocast(device_type=device.get_target(), dtype=torch.bfloat16):
+                logits = model(x)
+                loss = compute_loss(logits, y, grad_accum_steps)
 
             if ddp is not None:
                 if micro_step != grad_accum_steps - 1:
