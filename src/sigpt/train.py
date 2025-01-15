@@ -69,11 +69,8 @@ def train(
                 logits = model(x)
                 loss = compute_loss(logits, y, grad_accum_steps)
 
-            if ddp is not None:
-                if micro_step != grad_accum_steps - 1:
-                    with model.no_sync():
-                        _ = loss.backward()
-                else:
+            if ddp is not None and micro_step != grad_accum_steps - 1:
+                with model.no_sync():
                     _ = loss.backward()
             else:
                 _ = loss.backward()
