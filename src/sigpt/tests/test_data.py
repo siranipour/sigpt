@@ -3,6 +3,7 @@ import tiktoken
 
 from sigpt import data
 
+
 @pytest.mark.parametrize("split", ["train", "validation"])
 @pytest.mark.parametrize("block_size", [1, 32, 1024])
 @pytest.mark.parametrize("batch_size", [1, 32])
