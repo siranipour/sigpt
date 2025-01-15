@@ -129,7 +129,10 @@ def prepare_optimizer(
 
 def get_weight_decay_params(model: nn.Module, weight_decay: float) -> list[dict]:
     to_decay, not_to_decay = [], []
-    filter_rule = lambda name: "weight" in name and "ln" not in name
+
+    def filter_rule(name: str) -> bool:
+        return "weight" in name and "ln" not in name
+
     for name, tensor in model.named_parameters():
         if not tensor.requires_grad:
             continue

@@ -16,5 +16,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Check formatting with black
         run: uvx black -l 100 --check .
+      - name: Check linting
+        run: uvx ruff check
       - name: Test with python ${{ matrix.python-version }}
         run: uv run --all-groups --frozen pytest

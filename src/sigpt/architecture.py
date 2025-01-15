@@ -114,7 +114,9 @@ class CausalSelfAttention(nn.Module):
         # by the number of heads at the __init__ level of this module.
         # Transpose the middle 2 dims to treat the number of heads as a batch
         # dimension.
-        attn_reshape = lambda t: t.reshape(B, T, self.n_heads, C // self.n_heads).transpose(1, 2)
+        def attn_reshape(t: torch.Tensor) -> torch.Tensor:
+            return t.reshape(B, T, self.n_heads, C // self.n_heads).transpose(1, 2)
+
         k, q, v = map(attn_reshape, (k, q, v))  # (B, nh, T, hs)
 
         if USE_FLASH_ATTENTION:
