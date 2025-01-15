@@ -116,6 +116,7 @@ class CausalSelfAttention(nn.Module):
         # dimension.
         def attn_reshape(t: torch.Tensor) -> torch.Tensor:
             return t.reshape(B, T, self.n_heads, C // self.n_heads).transpose(1, 2)
+
         k, q, v = map(attn_reshape, (k, q, v))  # (B, nh, T, hs)
 
         if USE_FLASH_ATTENTION:
