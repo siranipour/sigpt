@@ -20,6 +20,9 @@ from sigpt import data
 )
 def test_ddpconfig(bad_config: tuple[int, int, int]):
     valid_config = data.DDPConfig(1, 10, 128)
+    assert valid_config.local_rank == 1
+    assert valid_config.rank == 10
+    assert valid_config.world_size == 128
 
     local_rank, rank, world_size = bad_config
     with pytest.raises(ValueError):
