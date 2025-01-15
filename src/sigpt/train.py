@@ -85,12 +85,18 @@ def train(
                     _ = loss.backward()
             else:
                 _ = loss.backward()
+        unclipped_grad_norm = torch.nn.utils.clip_grad_norm_(
+            model.parameters(), optimizer_config.max_grad_norm
+        )
         _ = optimizer.step()
         _ = scheduler.step()
 
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
             (lr,) = set(scheduler.get_last_lr())
-            wandb.log({"loss": loss.item(), "lr": lr}, step=idx)
+            wandb.log(
+                {"loss": loss.item(), "lr": lr, "unclipped_grad_norm": unclipped_grad_norm},
+                step=idx,
+            )
 
         idx += 1
 

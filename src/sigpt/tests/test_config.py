@@ -1,6 +1,6 @@
 import pytest
 
-from sigpt import data
+from sigpt import config
 
 
 @pytest.mark.parametrize(
@@ -19,11 +19,16 @@ from sigpt import data
     ],
 )
 def test_ddpconfig(bad_config: tuple[int, int, int]):
-    valid_config = data.DDPConfig(1, 10, 128)
+    valid_config = config.DDPConfig(1, 10, 128)
     assert valid_config.local_rank == 1
     assert valid_config.rank == 10
     assert valid_config.world_size == 128
 
     local_rank, rank, world_size = bad_config
     with pytest.raises(ValueError):
-        data.DDPConfig(local_rank, rank, world_size)
+        config.DDPConfig(local_rank, rank, world_size)
+
+
+def test_optimizer_config():
+    with pytest.raises(ValueError):
+        config.OptimizerConfig(0.1, 0.9, 0.95, -1.0)

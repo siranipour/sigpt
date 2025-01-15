@@ -28,6 +28,11 @@ class OptimizerConfig:
     weight_decay: float
     beta1: float
     beta2: float
+    max_grad_norm: float
+
+    def __post_init__(self):
+        if self.max_grad_norm < 0:
+            raise ValueError(f"Max gradient norm must be non-negative not {self.max_grad_norm}")
 
 
 @dataclasses.dataclass
@@ -39,7 +44,7 @@ class SchedulerConfig:
 
 
 def get_optimizer_config() -> OptimizerConfig:
-    return OptimizerConfig(weight_decay=0.1, beta1=0.9, beta2=0.95)
+    return OptimizerConfig(weight_decay=0.1, beta1=0.9, beta2=0.95, max_grad_norm=1.0)
 
 
 def get_scheduler_config() -> SchedulerConfig:
