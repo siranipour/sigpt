@@ -3,10 +3,11 @@ import tiktoken
 import wandb
 from sigpt import config, train
 
-MICRO_BATCH_SIZE = 4
-BATCH_SIZE = 4
-PROJECT_NAME = "sigpt"
-RUN_NAME = "training-run"
+MICRO_BATCH_SIZE: int = 4
+BATCH_SIZE: int = 4
+MAX_ITERS: int = 20_000
+PROJECT_NAME: str = "sigpt"
+RUN_NAME: str = "training-run"
 
 if __name__ == "__main__":
     ddp = train.get_ddp_config()
@@ -28,6 +29,7 @@ if __name__ == "__main__":
         optimizer_config,
         scheduler_config,
         encoder,
+        MAX_ITERS,
         MICRO_BATCH_SIZE,
         BATCH_SIZE,
         device,

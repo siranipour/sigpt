@@ -36,6 +36,7 @@ def train(
     optimizer_config: OptimizerConfig,
     scheduler_config: SchedulerConfig,
     encoder: tiktoken.Encoding,
+    max_iters: int,
     micro_batch_size: int,
     batch_size: int,
     device: Device,
@@ -68,9 +69,7 @@ def train(
     )
     data_gen = iter(train_dl)
 
-    idx = 0
-    # TODO: think about how to break from here
-    while True:
+    for idx in range(max_iters):
         timer_start = time.time()
         _ = optimizer.zero_grad()
 
@@ -114,7 +113,6 @@ def train(
                 step=idx,
             )
 
-        idx += 1
 
     if ddp is not None:
         destroy_process_group()
