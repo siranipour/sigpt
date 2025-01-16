@@ -43,6 +43,7 @@ def train(
     torch.set_float32_matmul_precision("high")
 
     if ddp is not None:
+        log.info("Initializing process group")
         dist.init_process_group(backend="nccl")
 
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
@@ -111,6 +112,11 @@ def train(
             train_loss = compute_eval_loss(train_dl, model, eval_iters, device, ddp)
             validation_loss = compute_eval_loss(validation_dl, model, eval_iters, device, ddp)
             if validation_loss < best_val_loss:
+                log.info(
+                    f"Current validation loss of {validation_loss:.5f} improves on previous best of {best_val_loss:.5f}. "
+                    f"Checkpointing model to {model_checkpoint_path}."
+                )
+                best_val_loss = validation_loss
                 checkpoint_model(model, model_checkpoint_path)
             (lr,) = set(scheduler.get_last_lr())
             dt = timer_stop - timer_start
@@ -127,6 +133,7 @@ def train(
             )
 
     if ddp is not None:
+        log.info("Destroying process group")
         dist.destroy_process_group()
 
     checkpoint_model(model, model_checkpoint_path)
@@ -136,6 +143,7 @@ def checkpoint_model(model: DDP | nn.Module, path: pathlib.Path) -> None:
     state_dict = get_model_state_dict(model)
     torch.save(state_dict, path)
     wandb.save(path)
+    log.info(f"Model successfuly checkpointed to {path}")
 
 
 def get_model_state_dict(model: DDP | nn.Module) -> dict:
@@ -186,9 +194,12 @@ def prepare_model(
     model = architecture.Transformer(model_config)
     model.train()
     if device != Device.MPS:
+        log.info("Compiling model")
         model = torch.compile(model)
+    log.info(f"Moving model to {device.get_target()}")
     model.to(device.get_target())
     if ddp is not None:
+        log.info("Enabling DDP for model")
         model = DDP(model, device_ids=[ddp.local_rank])
     return model
 
@@ -207,6 +218,7 @@ def prepare_optimizer(
 
 def get_weight_decay_params(model: nn.Module, weight_decay: float) -> list[dict]:
     to_decay, not_to_decay = [], []
+    names_to_decay, names_not_to_decay = [], []
 
     def filter_rule(name: str) -> bool:
         return "weight" in name and "ln" not in name
@@ -216,9 +228,13 @@ def get_weight_decay_params(model: nn.Module, weight_decay: float) -> list[dict]
             continue
         if filter_rule(name):
             assert tensor.ndim >= 2
+            names_to_decay.append(name)
             to_decay.append(tensor)
         else:
+            names_not_to_decay.append(name)
             not_to_decay.append(tensor)
+    log.info(f"Names that will not be weight decayed {names_not_to_decay}")
+    log.info(f"Names that will be weight decayed {names_to_decay}")
     return [
         {"params": to_decay, "weight_decay": weight_decay},
         {"params": not_to_decay, "weight_decay": 0.0},
