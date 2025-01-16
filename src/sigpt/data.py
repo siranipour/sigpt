@@ -21,7 +21,7 @@ def fetch_dataset_loader(
     prefetch_factor: int = 32,
     ddp: DDPConfig | None = None,
 ):
-    ds = BlockSizedDataset(block_size, split, encoder, ddp, shuffle=shuffle)
+    ds = BlockSizedDataset(block_size, split, encoder, shuffle=shuffle, ddp=ddp)
     return DataLoader(
         ds,
         batch_size=batch_size,
