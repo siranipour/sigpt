@@ -60,8 +60,14 @@ class BlockSizedDataset(IterableDataset):
 
     def __iter__(self):
         buffer = []
-        for datum in self._ds:
+        iterator = iter(self._ds)
+        while True:
             while len(buffer) < self.block_size:
+                try:
+                    datum = next(iterator)
+                except StopIteration:
+                    iterator = iter(self._ds)
+                    datum = next(iterator)
                 encoded = self.encoder.encode(datum[FEATURE_NAME]) + [self.encoder.eot_token]
                 buffer.extend(encoded)
             yield torch.tensor(buffer[: self.block_size], dtype=torch.long)
