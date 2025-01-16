@@ -23,6 +23,8 @@ if __name__ == "__main__":
     device = train.get_device()
     encoder = tiktoken.get_encoding("gpt2")
 
+    checkpoint_path = train.get_model_weights_path()
+
     train.train(
         model_config,
         optimizer_config,
@@ -32,6 +34,7 @@ if __name__ == "__main__":
         MICRO_BATCH_SIZE,
         BATCH_SIZE,
         device,
+        checkpoint_path,
         ddp,
         is_main_process,
     )

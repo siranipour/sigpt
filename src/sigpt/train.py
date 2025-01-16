@@ -1,5 +1,4 @@
 import enum
-import functools
 import math
 import os
 import pathlib
@@ -33,26 +32,11 @@ class Device(enum.Enum):
         return "cuda"
 
 
-def save_model(path: str):
-    def wrapper(func):
-        @functools.wraps(func)
-        def inner(*args, **kwargs):
-            model = func(*args, **kwargs)
-            torch.save(model.state_dict(), path)
-            wandb.save(path)
-            return model
-
-        return inner
-
-    return wrapper
-
-
 def get_model_weights_path(root: str | None = None) -> pathlib.Path:
     root = root or os.getcwd()
     return pathlib.Path(root) / "model_state.pt"
 
 
-@save_model(get_model_weights_path())
 def train(
     model_config: ModelConfig,
     optimizer_config: OptimizerConfig,
@@ -62,9 +46,10 @@ def train(
     micro_batch_size: int,
     batch_size: int,
     device: Device,
+    model_checkpoint_path: pathlib.Path,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
-) -> nn.Module:
+) -> None:
     torch.set_float32_matmul_precision("high")
 
     if ddp is not None:
@@ -95,6 +80,7 @@ def train(
         timer_start = time.time()
         _ = optimizer.zero_grad()
 
+        # BUG: what happens when grad accum steps is 0?
         for micro_step in range(grad_accum_steps):
             example = next(data_gen)
             x, y = example[..., :-1], example[..., 1:]
@@ -123,11 +109,16 @@ def train(
         timer_stop = time.time()
 
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
+            checkpoint_model(model, model_checkpoint_path)
             (lr,) = set(scheduler.get_last_lr())
             dt = timer_stop - timer_start
             wandb.log(
                 {
+                    # BUG: loss is out of scope here when running under ddp (likely due to not check grad accum steps != 0)
+                    # BUG: should sync loss across processes
                     "train_loss": loss.item(),
+                    # TODO: add validation loss evals.
+                    # TODO: save model at this point too
                     "lr": lr,
                     "unclipped_grad_norm": unclipped_grad_norm,
                     "dt/s": round(dt, 2),
@@ -139,9 +130,19 @@ def train(
     if ddp is not None:
         destroy_process_group()
 
+    checkpoint_model(model, model_checkpoint_path)
+
+
+def checkpoint_model(model: DDP | nn.Module, path: pathlib.Path) -> None:
+    state_dict = get_model_state_dict(model)
+    torch.save(state_dict, path)
+    wandb.save(path)
+
+
+def get_model_state_dict(model: DDP | nn.Module) -> dict:
     if isinstance(model, DDP):
-        return model.module
-    return model
+        return model.module.state_dict()
+    return model.state_dict()
 
 
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> torch.Tensor:
@@ -235,5 +236,6 @@ def compute_gradient_accumulation_steps(
     micro_batch_size: int, batch_size: int, ddp: DDPConfig | None = None
 ) -> int:
     world_size = ddp.world_size if ddp is not None else 1
+    # BUG: this assertion is incorrect
     assert batch_size % (micro_batch_size * world_size) == 0
     return batch_size // (micro_batch_size * world_size)
