@@ -3,8 +3,8 @@ import tiktoken
 import wandb
 from sigpt import config, train
 
-MICRO_BATCH_SIZE: int = 4
-BATCH_SIZE: int = 4
+MICRO_BATCH_SIZE: int = 12
+BATCH_SIZE: int = 480
 MAX_ITERS: int = 20_000
 PROJECT_NAME: str = "sigpt"
 RUN_NAME: str = "training-run"
