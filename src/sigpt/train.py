@@ -1,6 +1,8 @@
 import enum
+import functools
 import math
 import os
+import pathlib
 import time
 
 import tiktoken
@@ -31,6 +33,26 @@ class Device(enum.Enum):
         return "cuda"
 
 
+def save_model(path: str):
+    def wrapper(func):
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            model = func(*args, **kwargs)
+            torch.save(model.state_dict(), path)
+            wandb.save(path)
+            return model
+
+        return inner
+
+    return wrapper
+
+
+def get_model_weights_path(root: str | None = None) -> pathlib.Path:
+    root = root or os.getcwd()
+    return pathlib.Path(root) / "model_state.pt"
+
+
+@save_model(get_model_weights_path())
 def train(
     model_config: ModelConfig,
     optimizer_config: OptimizerConfig,
@@ -42,7 +64,7 @@ def train(
     device: Device,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
-) -> None:
+) -> nn.Module:
     torch.set_float32_matmul_precision("high")
 
     if ddp is not None:
@@ -116,6 +138,10 @@ def train(
 
     if ddp is not None:
         destroy_process_group()
+
+    if isinstance(model, DDP):
+        return model.module
+    return model
 
 
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> torch.Tensor:
