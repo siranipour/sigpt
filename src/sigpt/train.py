@@ -71,10 +71,11 @@ def train(
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
-    train_dl = data.fetch_dataset_loader(
-        "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
+    train_dl = iter(
+        data.fetch_dataset_loader(
+            "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
+        )
     )
-    data_gen = iter(train_dl)
 
     for idx in range(max_iters):
         timer_start = time.time()
@@ -82,7 +83,7 @@ def train(
 
         # BUG: what happens when grad accum steps is 0?
         for micro_step in range(grad_accum_steps):
-            example = next(data_gen)
+            example = next(train_dl)
             x, y = example[..., :-1], example[..., 1:]
             if device == Device.GPU:
                 x, y = map(
