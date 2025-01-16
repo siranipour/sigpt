@@ -13,11 +13,11 @@ from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 import wandb
-from sigpt import architecture, data, log
+from sigpt import architecture, data, logging
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
 from sigpt.env import Device
 
-log = log.setup_logger()
+log = logging.setup_logger()
 EVAL_FREQUENCY: int = 100
 
 
