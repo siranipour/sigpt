@@ -1,6 +1,7 @@
+import tempfile
 import torch
 
-from sigpt import architecture, config, sample
+from sigpt import architecture, config, sample, train
 
 INPUT_PROMPT = "Hello, I am language model and"
 
@@ -21,3 +22,12 @@ def test_model_output(seed: int = 1234):
     assert len(mdl_output) == 2
 
     assert all(gen == exp for gen, exp in zip(mdl_output, EXPECTED_OUTPUTS))
+
+
+def test_model_persistence():
+    mdl = architecture.Transformer(config.get_gpt_config())
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        path = train.get_model_weights_path(root=tempdir)
+        torch.save(mdl.state_dict(), path)
+        assert path.exists()
