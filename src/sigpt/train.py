@@ -89,6 +89,7 @@ def train(
             shuffle=False,
         )
     )
+    best_val_loss = float("inf")
 
     for idx in range(max_iters):
         timer_start = time.time()
@@ -119,8 +120,8 @@ def train(
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
             train_loss = compute_eval_loss(train_dl, model, eval_iters, device, ddp)
             validation_loss = compute_eval_loss(validation_dl, model, eval_iters, device, ddp)
-            # TODO: add more strict checkpoint criterion
-            checkpoint_model(model, model_checkpoint_path)
+            if validation_loss < best_val_loss:
+                checkpoint_model(model, model_checkpoint_path)
             (lr,) = set(scheduler.get_last_lr())
             dt = timer_stop - timer_start
             wandb.log(
