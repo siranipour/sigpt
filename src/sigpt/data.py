@@ -16,11 +16,12 @@ def fetch_dataset_loader(
     encoder: tiktoken.Encoding,
     batch_size: int,
     block_size: int,
+    shuffle: bool = True,
     num_workers: int = 1,
     prefetch_factor: int = 32,
     ddp: DDPConfig | None = None,
 ):
-    ds = BlockSizedDataset(block_size, split, encoder, ddp)
+    ds = BlockSizedDataset(block_size, split, encoder, shuffle=shuffle, ddp=ddp)
     return DataLoader(
         ds,
         batch_size=batch_size,
@@ -42,6 +43,7 @@ class BlockSizedDataset(IterableDataset):
         block_size: int,
         split: str,
         encoder: tiktoken.Encoding,
+        shuffle: bool = True,
         ddp: DDPConfig | None = None,
     ):
         super().__init__()
@@ -49,11 +51,11 @@ class BlockSizedDataset(IterableDataset):
         self.encoder = encoder
         self.ddp = ddp
 
-        self._ds = (
-            datasets.load_dataset(DATASET_PATH, DATASET_NAME, streaming=True, split=split)
-            .select_columns(FEATURE_NAME)
-            .shuffle(seed=self.SEED, buffer_size=self.BUFFER_SIZE)
-        )
+        self._ds = datasets.load_dataset(
+            DATASET_PATH, DATASET_NAME, streaming=True, split=split
+        ).select_columns(FEATURE_NAME)
+        if shuffle:
+            self._ds = self._ds.shuffle(seed=self.SEED, buffer_size=self.BUFFER_SIZE)
 
         if ddp is not None:
             self._ds = split_dataset_by_node(self._ds, ddp.rank, ddp.world_size)

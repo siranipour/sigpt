@@ -1,4 +1,5 @@
 import enum
+import functools
 import math
 import os
 import pathlib
@@ -8,7 +9,7 @@ import tiktoken
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.distributed import destroy_process_group, init_process_group
+from torch import distributed as dist
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -47,13 +48,14 @@ def train(
     batch_size: int,
     device: Device,
     model_checkpoint_path: pathlib.Path,
+    eval_iters: int = 100,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
 ) -> None:
     torch.set_float32_matmul_precision("high")
 
     if ddp is not None:
-        init_process_group(backend="nccl")
+        dist.init_process_group(backend="nccl")
 
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
     tokens_per_iter = (
@@ -71,25 +73,32 @@ def train(
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
-    train_dl = iter(
+    train_dl = data.fetch_dataset_loader(
+        "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
+    )
+    train_iterator = iter(train_dl)
+
+    validation_dl = iter(
         data.fetch_dataset_loader(
-            "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
+            "validation",
+            encoder,
+            batch_size,
+            model_config.block_size + 1,
+            num_workers=4,
+            ddp=ddp,
+            shuffle=False,
         )
     )
+    best_val_loss = float("inf")
 
     for idx in range(max_iters):
         timer_start = time.time()
         _ = optimizer.zero_grad()
 
         for micro_step in range(grad_accum_steps):
-            example = next(train_dl)
+            example = next(train_iterator)
             x, y = example[..., :-1], example[..., 1:]
-            if device == Device.GPU:
-                x, y = map(
-                    lambda t: t.pin_memory().to(device.get_target(), non_blocking=True), (x, y)
-                )
-            else:
-                x, y = map(lambda t: t.to(device.get_target()), (x, y))
+            x, y = map(functools.partial(tensor_to_device, device=device), (x, y))
 
             with torch.autocast(device_type=device.get_target(), dtype=torch.bfloat16):
                 logits = model(x)
@@ -109,14 +118,16 @@ def train(
         timer_stop = time.time()
 
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
-            checkpoint_model(model, model_checkpoint_path)
+            train_loss = compute_eval_loss(train_dl, model, eval_iters, device, ddp)
+            validation_loss = compute_eval_loss(validation_dl, model, eval_iters, device, ddp)
+            if validation_loss < best_val_loss:
+                checkpoint_model(model, model_checkpoint_path)
             (lr,) = set(scheduler.get_last_lr())
             dt = timer_stop - timer_start
             wandb.log(
                 {
-                    # BUG: should sync loss across processes
-                    "train_loss": loss.item(),
-                    # TODO: add validation loss evals.
+                    "train_loss": train_loss,
+                    "validation_loss": validation_loss,
                     "lr": lr,
                     "unclipped_grad_norm": unclipped_grad_norm,
                     "dt/s": round(dt, 2),
@@ -126,7 +137,7 @@ def train(
             )
 
     if ddp is not None:
-        destroy_process_group()
+        dist.destroy_process_group()
 
     checkpoint_model(model, model_checkpoint_path)
 
@@ -146,6 +157,37 @@ def get_model_state_dict(model: DDP | nn.Module) -> dict:
 def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> torch.Tensor:
     B, T, C = logits.shape
     return F.cross_entropy(logits.reshape(B * T, C), targets.reshape(B * T)) / norm
+
+
+@torch.no_grad()
+def compute_eval_loss(
+    dataloader, model: nn.Module, validation_iters: int, device: Device, ddp: DDPConfig | None
+) -> float:
+    model.eval()
+    # Call iter on validation data loader here to always use
+    # the same set of validation examples
+    it = iter(dataloader)
+    total_loss = torch.zeros(1, device=device.get_target())
+    for _ in range(validation_iters):
+        example = next(it)
+        x, y = example[..., :-1], example[..., 1:]
+        x, y = map(functools.partial(tensor_to_device, device=device), (x, y))
+        with torch.autocast(device_type=device.get_target(), dtype=torch.bfloat16):
+            logits = model(x)
+            total_loss += compute_loss(logits, y, 1)
+
+    total_loss /= validation_iters
+
+    if ddp is not None:
+        dist.all_reduce(total_loss, op=dist.ReduceOp.AVG)
+    model.train()
+    return total_loss.item()
+
+
+def tensor_to_device(t: torch.Tensor, device: Device) -> torch.Tensor:
+    if device == Device.GPU:
+        return t.pin_memory().to(device.get_target(), non_blocking=True)
+    return t.to(device.get_target())
 
 
 def prepare_model(
