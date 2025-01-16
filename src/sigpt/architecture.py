@@ -6,10 +6,6 @@ import torch.nn.functional as F
 
 from sigpt.config import ModelConfig
 
-# This needs to be a global constant so that model.compile downstream
-# knows to only consider the flash attention path.
-USE_FLASH_ATTENTION: Final[bool] = True
-
 
 class Transformer(nn.Module):
     def __init__(self, config: ModelConfig):
@@ -96,13 +92,15 @@ class CausalSelfAttention(nn.Module):
         # into the residual pathway
         self.proj = nn.Linear(self.n_embed, self.n_embed)
 
-        if USE_FLASH_ATTENTION:
-            # Register the causal self-attention mask. Broadcast to (1, 1, T, T)
-            # where the dummy 1, 1 indices are for batch and head indices.
-            self.register_buffer(
-                "causal_mask",
-                torch.tril(torch.ones(config.block_size, config.block_size))[None, None, ...],
-            )
+        # If not using the call to flash attention in the forward method, the below
+        # buffer would have to be registered.
+
+        # # Register the causal self-attention mask. Broadcast to (1, 1, T, T)
+        # # where the dummy 1, 1 indices are for batch and head indices.
+        # self.register_buffer(
+        #     "causal_mask",
+        #     torch.tril(torch.ones(config.block_size, config.block_size))[None, None, ...],
+        # )
 
     def forward(self, x: torch.Tensor):
         B, T, C = x.shape
@@ -119,14 +117,16 @@ class CausalSelfAttention(nn.Module):
 
         k, q, v = map(attn_reshape, (k, q, v))  # (B, nh, T, hs)
 
-        if USE_FLASH_ATTENTION:
-            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
-        else:
-            attn = (k @ q.transpose(-1, -2)) / (self.hs**0.5)  # (B, nh, T, T)
-            # Only slice out the part of the causal mask we need for this batch
-            attn = attn.where(self.causal_mask[..., :T, :T] != 0, -torch.inf)
-            # Normalize reduce operation weights
-            attn = F.softmax(attn, dim=-1)
-            y = attn @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+        # The below call to scaled_dot_product_attention is equivalent to:
+        # attn = (k @ q.transpose(-1, -2)) / (self.hs**0.5)  # (B, nh, T, T)
+        # # Only slice out the part of the causal mask we need for this batch
+        # attn = attn.where(self.causal_mask[..., :T, :T] != 0, -torch.inf)
+        # # Normalize reduce operation weights
+        # attn = F.softmax(attn, dim=-1)
+        # y = attn @ v  # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+        # Calling the below, however, is more efficient since it implements flash
+        # attention
+
+        y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         y = y.transpose(1, 2).reshape(B, T, C)
         return self.proj(y)
