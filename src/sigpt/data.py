@@ -51,10 +51,9 @@ class BlockSizedDataset(IterableDataset):
         self.encoder = encoder
         self.ddp = ddp
 
-        self._ds = (
-            datasets.load_dataset(DATASET_PATH, DATASET_NAME, streaming=True, split=split)
-            .select_columns(FEATURE_NAME)
-        )
+        self._ds = datasets.load_dataset(
+            DATASET_PATH, DATASET_NAME, streaming=True, split=split
+        ).select_columns(FEATURE_NAME)
         if shuffle:
             self._ds = self._ds.shuffle(seed=self.SEED, buffer_size=self.BUFFER_SIZE)
 
