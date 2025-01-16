@@ -1,4 +1,3 @@
-import enum
 import functools
 import math
 import os
@@ -14,23 +13,12 @@ from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 import wandb
-from sigpt import architecture, data
+from sigpt import architecture, data, log
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
+from sigpt.env import Device
 
+log = log.setup_logger()
 EVAL_FREQUENCY: int = 100
-
-
-class Device(enum.Enum):
-    CPU = "cpu"
-    MPS = "mps"
-    GPU = "cuda"
-
-    def get_target(self) -> str:
-        if self.value != "cuda":
-            return self.value
-        if is_ddp():
-            return f"cuda:{get_ddp_config().rank}"
-        return "cuda"
 
 
 def get_model_weights_path(root: str | None = None) -> pathlib.Path:
@@ -48,7 +36,7 @@ def train(
     batch_size: int,
     device: Device,
     model_checkpoint_path: pathlib.Path,
-    eval_iters: int = 100,
+    eval_iters: int,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
 ) -> None:
@@ -58,12 +46,14 @@ def train(
         dist.init_process_group(backend="nccl")
 
     grad_accum_steps = compute_gradient_accumulation_steps(micro_batch_size, batch_size, ddp)
+    log.info(f"Using gradient accumulation steps of {grad_accum_steps}")
     tokens_per_iter = (
         grad_accum_steps
         * batch_size
         * model_config.block_size
         * (1 if ddp is None else ddp.world_size)
     )
+    log.info(f"Processing {tokens_per_iter} tokens per iteration")
     model = prepare_model(model_config, device, ddp)
 
     if is_main_process:
@@ -249,27 +239,6 @@ def prepare_scheduler(
         return c.min_lr + 0.5 * (c.max_lr - c.min_lr) * (1 + math.cos(math.pi * T))
 
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-
-
-def get_device() -> Device:
-    if torch.cuda.is_available():
-        return Device.GPU
-    if torch.mps.is_available():
-        return Device.MPS
-    return Device.CPU
-
-
-def is_ddp() -> bool:
-    return ("LOCAL_RANK" in os.environ) and ("RANK" in os.environ) and ("WORLD_SIZE" in os.environ)
-
-
-def get_ddp_config() -> DDPConfig | None:
-    if not is_ddp():
-        return None
-    local_rank = int(os.environ["LOCAL_RANK"])
-    rank = int(os.environ["RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
-    return DDPConfig(local_rank, rank, world_size)
 
 
 def compute_gradient_accumulation_steps(

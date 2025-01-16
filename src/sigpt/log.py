@@ -1,5 +1,7 @@
 import logging
 
+from sigpt import env
+
 
 class ColorFormatter(logging.Formatter):
     LEVEL_COLORS = {
@@ -21,16 +23,15 @@ def setup_logger():
     logger = logging.getLogger("sigpt")
     logger.setLevel(logging.DEBUG)
 
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    if env.is_main_process():
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
 
-    formatter = ColorFormatter(
-        "[%(levelname)s] %(asctime)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S %Z"
-    )
-    ch.setFormatter(formatter)
+        formatter = ColorFormatter(
+            "[%(levelname)s] %(asctime)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S %Z"
+        )
+        ch.setFormatter(formatter)
 
-    logger.addHandler(ch)
+        logger.addHandler(ch)
     return logger
 
-
-log = setup_logger()
