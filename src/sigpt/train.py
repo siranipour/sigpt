@@ -81,7 +81,6 @@ def train(
         timer_start = time.time()
         _ = optimizer.zero_grad()
 
-        # BUG: what happens when grad accum steps is 0?
         for micro_step in range(grad_accum_steps):
             example = next(train_dl)
             x, y = example[..., :-1], example[..., 1:]
@@ -115,11 +114,9 @@ def train(
             dt = timer_stop - timer_start
             wandb.log(
                 {
-                    # BUG: loss is out of scope here when running under ddp (likely due to not check grad accum steps != 0)
                     # BUG: should sync loss across processes
                     "train_loss": loss.item(),
                     # TODO: add validation loss evals.
-                    # TODO: save model at this point too
                     "lr": lr,
                     "unclipped_grad_norm": unclipped_grad_norm,
                     "dt/s": round(dt, 2),
@@ -237,6 +234,4 @@ def compute_gradient_accumulation_steps(
     micro_batch_size: int, batch_size: int, ddp: DDPConfig | None = None
 ) -> int:
     world_size = ddp.world_size if ddp is not None else 1
-    # BUG: this assertion is incorrect
-    assert batch_size % (micro_batch_size * world_size) == 0
-    return batch_size // (micro_batch_size * world_size)
+    return max(batch_size // (micro_batch_size * world_size), 1)
