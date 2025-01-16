@@ -15,7 +15,7 @@ import wandb
 from sigpt import architecture, data
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
 
-EVAL_FREQUENCY: int = 2000
+EVAL_FREQUENCY: int = 100
 
 
 class Device(enum.Enum):
