@@ -21,7 +21,6 @@ if __name__ == "__main__":
     optimizer_config = config.get_optimizer_config()
     scheduler_config = config.get_scheduler_config()
     device = train.get_device()
-    device = train.Device.CPU
     encoder = tiktoken.get_encoding("gpt2")
 
     train.train(

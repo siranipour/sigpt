@@ -92,6 +92,7 @@ def train(
                     _ = loss.backward()
             else:
                 _ = loss.backward()
+
         unclipped_grad_norm = torch.nn.utils.clip_grad_norm_(
             model.parameters(), optimizer_config.max_grad_norm
         )
@@ -112,7 +113,6 @@ def train(
                 },
                 step=idx,
             )
-
 
     if ddp is not None:
         destroy_process_group()
