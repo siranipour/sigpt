@@ -1,9 +1,8 @@
 import tiktoken
 
 import wandb
-from sigpt import config, env, logging, train
-
-log = logging.setup_logger()
+from sigpt import config, env, train
+from sigpt.logging import log
 
 MICRO_BATCH_SIZE: int = 12
 BATCH_SIZE: int = 480

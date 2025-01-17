@@ -2,6 +2,8 @@ import logging
 
 from sigpt import env
 
+__all__ = ("log",)
+
 
 class ColorFormatter(logging.Formatter):
     LEVEL_COLORS = {
@@ -34,3 +36,6 @@ def setup_logger():
 
         logger.addHandler(ch)
     return logger
+
+
+log = setup_logger()
