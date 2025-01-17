@@ -1,7 +1,9 @@
 import tiktoken
 
 import wandb
-from sigpt import config, env, train
+from sigpt import config, env, logging, train
+
+log = logging.setup_logger()
 
 MICRO_BATCH_SIZE: int = 12
 BATCH_SIZE: int = 480
@@ -17,6 +19,9 @@ if __name__ == "__main__":
     if is_main_process:
         wandb.login()
         wandb.init(project=PROJECT_NAME, name=RUN_NAME, entity="s-iranipour-siranipour-io")
+
+    if ddp is not None:
+        log.info(f"Running with world size of {ddp.world_size}")
 
     model_config = config.get_gpt_config()
     optimizer_config = config.get_optimizer_config()
