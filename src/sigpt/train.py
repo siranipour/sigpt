@@ -54,7 +54,7 @@ def train(
         * model_config.block_size
         * (1 if ddp is None else ddp.world_size)
     )
-    log.info(f"Processing {tokens_per_iter} tokens per iteration")
+    log.info(f"Processing {tokens_per_iter:,} tokens per iteration")
     model = prepare_model(model_config, device, ddp)
 
     if is_main_process:
