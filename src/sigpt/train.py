@@ -56,7 +56,7 @@ def train(
     log.info(f"Processing {tokens_per_iter:,} tokens per iteration")
 
     model = prepare_model(model_config, device, ddp)
-    log.info(f"Using model with {architecture.count_trainable_parameters(model)} parameters")
+    log.info(f"Using model with {architecture.count_trainable_parameters(model):,} parameters")
 
     if is_main_process:
         wandb.watch(model, log_freq=EVAL_FREQUENCY)
