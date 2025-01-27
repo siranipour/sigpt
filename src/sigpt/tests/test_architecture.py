@@ -2,7 +2,7 @@ import tempfile
 
 import torch
 
-from sigpt import architecture, config, sample, train
+from sigpt import architecture, config, inference, train
 
 INPUT_PROMPT: str = "Hello, I am language model and"
 
@@ -20,7 +20,7 @@ def test_model_output(seed: int = 1234):
 
     mdl = architecture.Transformer(config.get_gpt_config())
 
-    mdl_output = sample.generate(mdl, INPUT_PROMPT, batches=2, max_samples=5)
+    mdl_output = inference.generate(mdl, INPUT_PROMPT, batches=2, max_samples=5)
 
     assert len(mdl_output) == 2
 
