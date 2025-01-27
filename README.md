@@ -27,5 +27,5 @@ The model was trained on 8x A100 GPUs using
 training script can be invoked (assuming distributed workloads) using:
 
 ```prompt
-uv run --group train torchrun --standalone --nproc_per_node=8 src/train.py
+uv run --group train torchrun --standalone --nproc_per_node=8 scripts/train.py
 ```
