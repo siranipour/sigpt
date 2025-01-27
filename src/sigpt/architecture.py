@@ -128,3 +128,7 @@ class CausalSelfAttention(nn.Module):
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         y = y.transpose(1, 2).reshape(B, T, C)
         return self.proj(y)
+
+
+def count_trainable_parameters(model: nn.Module) -> int:
+    return sum(map(lambda p: p.numel() if p.requires_grad else 0, model.parameters()))
