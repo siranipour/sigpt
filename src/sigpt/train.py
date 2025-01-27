@@ -66,7 +66,7 @@ def train(
 
     # Add +1 to the block size in order to slice out the next token as the target
     train_dl = data.fetch_dataset_loader(
-        "train", encoder, batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
+        "train", encoder, micro_batch_size, model_config.block_size + 1, num_workers=4, ddp=ddp
     )
     train_iterator = iter(train_dl)
 
@@ -74,7 +74,7 @@ def train(
         data.fetch_dataset_loader(
             "validation",
             encoder,
-            batch_size,
+            micro_batch_size,
             model_config.block_size + 1,
             num_workers=4,
             ddp=ddp,
