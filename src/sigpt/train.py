@@ -21,11 +21,6 @@ from sigpt.logging import log
 EVAL_FREQUENCY: int = 100
 
 
-def get_model_weights_path(root: str | None = None) -> pathlib.Path:
-    root = root or os.getcwd()
-    return pathlib.Path(root) / "model_state.pt"
-
-
 def train(
     model_config: ModelConfig,
     optimizer_config: OptimizerConfig,
@@ -153,6 +148,11 @@ def checkpoint_model(model: DDP | nn.Module, path: pathlib.Path) -> None:
     torch.save(state_dict, path)
     wandb.save(path)
     log.info(f"Model successfuly checkpointed to {path}")
+
+
+def get_model_weights_path(root: str | None = None) -> pathlib.Path:
+    root = root or os.getcwd()
+    return pathlib.Path(root) / "model_state.pt"
 
 
 def get_model_state_dict(model: DDP | nn.Module) -> dict:
