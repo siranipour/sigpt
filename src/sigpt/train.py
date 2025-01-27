@@ -70,16 +70,14 @@ def train(
     )
     train_iterator = iter(train_dl)
 
-    validation_dl = iter(
-        data.fetch_dataset_loader(
-            "validation",
-            encoder,
-            micro_batch_size,
-            model_config.block_size + 1,
-            num_workers=4,
-            ddp=ddp,
-            shuffle=False,
-        )
+    validation_dl = data.fetch_dataset_loader(
+        "validation",
+        encoder,
+        micro_batch_size,
+        model_config.block_size + 1,
+        num_workers=1,
+        ddp=ddp,
+        shuffle=False,
     )
     best_val_loss = float("inf")
 
