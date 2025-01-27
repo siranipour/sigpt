@@ -152,7 +152,7 @@ def checkpoint_model(model: DDP | nn.Module, path: pathlib.Path) -> None:
 
 def get_model_weights_path(root: str | None = None) -> pathlib.Path:
     root = root or os.getcwd()
-    return pathlib.Path(root) / "model_state.pt"
+    return (pathlib.Path(root) / "model_state.pt").resolve()
 
 
 def get_model_state_dict(model: DDP | nn.Module) -> dict:
