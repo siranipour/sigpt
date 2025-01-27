@@ -15,7 +15,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 from sigpt import architecture, data
 from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfig
-from sigpt.env import Device
+from sigpt.env import Device, get_quantized_dtype
 from sigpt.logging import log
 
 EVAL_FREQUENCY: int = 100
@@ -41,6 +41,8 @@ def train(
     is_main_process: bool = True,
 ) -> None:
     torch.set_float32_matmul_precision("high")
+    dtype = get_quantized_dtype()
+    log.info(f"Using dtype {dtype}")
 
     if ddp is not None:
         log.info("Initializing process group")
@@ -91,7 +93,7 @@ def train(
             x, y = example[..., :-1], example[..., 1:]
             x, y = map(functools.partial(tensor_to_device, device=device), (x, y))
 
-            with torch.autocast(device_type=device.get_target(), dtype=torch.bfloat16):
+            with torch.autocast(device_type=device.get_target(), dtype=dtype):
                 logits = model(x)
                 loss = compute_loss(logits, y, grad_accum_steps)
 
@@ -161,6 +163,7 @@ def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> to
 def compute_eval_loss(
     dataloader, model: nn.Module, validation_iters: int, device: Device, ddp: DDPConfig | None
 ) -> float:
+    dtype = get_quantized_dtype()
     model.eval()
     # Call iter on validation data loader here to always use
     # the same set of validation examples
@@ -170,7 +173,7 @@ def compute_eval_loss(
         example = next(it)
         x, y = example[..., :-1], example[..., 1:]
         x, y = map(functools.partial(tensor_to_device, device=device), (x, y))
-        with torch.autocast(device_type=device.get_target(), dtype=torch.bfloat16):
+        with torch.autocast(device_type=device.get_target(), dtype=dtype):
             logits = model(x)
             total_loss += compute_loss(logits, y, 1)
 

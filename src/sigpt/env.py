@@ -39,6 +39,13 @@ def get_ddp_config() -> DDPConfig | None:
     return DDPConfig(local_rank, rank, world_size)
 
 
+def get_quantized_dtype() -> torch.dtype:
+    if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        return torch.bfloat16
+    # If using torch.float16, gradient scaling should be implemented in the training loop
+    return torch.float32
+
+
 def is_main_process() -> bool:
     ddp = get_ddp_config()
     return ddp is None or ddp.rank == 0
