@@ -144,7 +144,7 @@ def train(
 def checkpoint_model(model: DDP | nn.Module, path: pathlib.Path) -> None:
     state_dict = get_model_state_dict(model)
     torch.save(state_dict, path)
-    wandb.save(path)
+    wandb.save(path.name)
     log.info(f"Model successfuly checkpointed to {path}")
 
 
