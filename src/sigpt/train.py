@@ -44,6 +44,8 @@ def train(
     dtype = get_quantized_dtype()
     log.info(f"Using dtype {dtype}")
 
+    grad_scaler = torch.GradScaler(device=device.get_target(), enabled=dtype == torch.float16)
+
     if ddp is not None:
         log.info("Initializing process group")
         dist.init_process_group(backend="nccl")
@@ -99,14 +101,17 @@ def train(
 
             if ddp is not None and micro_step != grad_accum_steps - 1:
                 with model.no_sync():
-                    _ = loss.backward()
+                    _ = grad_scaler.scale(loss).backward()
             else:
-                _ = loss.backward()
+                _ = grad_scaler.scale(loss).backward()
 
+        _ = grad_scaler.unscale_(optimizer)
+        # Gradients are modified in-place. We store the unclipped gradients for logging only
         unclipped_grad_norm = torch.nn.utils.clip_grad_norm_(
             model.parameters(), optimizer_config.max_grad_norm
         )
-        _ = optimizer.step()
+        _ = grad_scaler.step(optimizer)
+        _ = grad_scaler.update()
         _ = scheduler.step()
         timer_stop = time.time()
 
