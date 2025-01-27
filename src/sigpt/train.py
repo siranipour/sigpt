@@ -113,8 +113,8 @@ def train(
         timer_stop = time.time()
 
         if is_main_process and (idx % EVAL_FREQUENCY == 0):
-            train_loss = compute_eval_loss(train_dl, model, eval_iters, device, ddp)
-            validation_loss = compute_eval_loss(validation_dl, model, eval_iters, device, ddp)
+            train_loss = compute_eval_loss(train_dl, model, eval_iters, device)
+            validation_loss = compute_eval_loss(validation_dl, model, eval_iters, device)
             if validation_loss < best_val_loss:
                 log.info(
                     f"Current validation loss of {validation_loss:.5f} improves on previous best of {best_val_loss:.5f}. "
@@ -167,9 +167,7 @@ def compute_loss(logits: torch.Tensor, targets: torch.Tensor, norm: float) -> to
 
 
 @torch.no_grad()
-def compute_eval_loss(
-    dataloader, model: nn.Module, validation_iters: int, device: Device, ddp: DDPConfig | None
-) -> float:
+def compute_eval_loss(dataloader, model: nn.Module, validation_iters: int, device: Device) -> float:
     dtype = get_quantized_dtype()
     model.eval()
     # Call iter on validation data loader here to always use
@@ -183,11 +181,8 @@ def compute_eval_loss(
         with torch.autocast(device_type=device.get_target(), dtype=dtype):
             logits = model(x)
             total_loss += compute_loss(logits, y, 1)
-
     total_loss /= validation_iters
 
-    if ddp is not None:
-        dist.all_reduce(total_loss, op=dist.ReduceOp.AVG)
     model.train()
     return total_loss.item()
 
