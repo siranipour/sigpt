@@ -127,7 +127,7 @@ def train(
                     "train_loss": train_loss,
                     "validation_loss": validation_loss,
                     "lr": lr,
-                    "unclipped_grad_norm": unclipped_grad_norm,
+                    "unclipped_grad_norm": unclipped_grad_norm.item(),
                     "dt/s": round(dt, 2),
                     "tokens/s": round(tokens_per_iter / dt, 2),
                 },
