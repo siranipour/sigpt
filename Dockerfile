@@ -28,6 +28,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-COPY assets/sigpt.onnx /app/assets/sigpt.onnx
+COPY assets/sigpt.onnx.quantized /app/assets/sigpt.onnx.quantized
 
 CMD ["uvicorn", "sigpt.serve:app", "--port", "8000", "--host", "0.0.0.0"]
