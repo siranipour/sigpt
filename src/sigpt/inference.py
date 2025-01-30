@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from sigpt import architecture, config
+
 
 def generate(
     model: nn.Module,
@@ -10,9 +12,8 @@ def generate(
     batches: int,
     max_samples: int,
     k: int = 50,
-    encoder: tiktoken.Encoding | None = None,
 ) -> list[str]:
-    encoder = encoder or tiktoken.get_encoding("gpt2")
+    encoder = tiktoken.get_encoding("gpt2")
     encoded_prompt = torch.tensor(encoder.encode(prompt), dtype=torch.long)
     encoded_prompt = torch.tile(encoded_prompt, (batches, 1))
 
@@ -51,3 +52,34 @@ def generate_tokens(
 
 def truncate_to_eot(tokens: list[int], eot_token: int) -> list[int]:
     return tokens[: tokens.index(eot_token)] if eot_token in tokens else tokens
+
+
+def _save_to_onnx(state_path: str, output_path: str) -> None:
+    state = torch.load(state_path, map_location=torch.device("cpu"), weights_only=True)
+    state = {k.removeprefix("_orig_mod."): v for k, v in state.items()}
+
+    model = architecture.Transformer(config.get_gpt_config())
+    model.load_state_dict(state)
+    model.eval()
+
+    prompt = "Hello, world!"
+    encoder = tiktoken.get_encoding("gpt2")
+    example_input = torch.tensor(encoder.encode(prompt), dtype=torch.long)[None]
+
+    torch.onnx.export(
+        model,
+        (example_input,),
+        output_path,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={
+            "input": {
+                0: "batch",
+                1: "time",
+            },
+            "output": {
+                0: "batch",
+                1: "time",
+            },
+        },
+    )
