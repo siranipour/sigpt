@@ -4,7 +4,7 @@ import wandb
 from sigpt import config, env, train
 from sigpt.logging import log
 
-MICRO_BATCH_SIZE: int = 12
+MICRO_BATCH_SIZE: int = 36
 BATCH_SIZE: int = 480
 MAX_ITERS: int = 600_000
 EVAL_ITERS: int = 100
