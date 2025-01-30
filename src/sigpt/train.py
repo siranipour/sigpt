@@ -64,7 +64,7 @@ def train(
     if is_main_process:
         wandb.watch(model, log_freq=EVAL_FREQUENCY)
 
-    optimizer = prepare_optimizer(model, optimizer_config, scheduler_config)
+    optimizer = prepare_optimizer(model, optimizer_config)
     scheduler = prepare_scheduler(optimizer, scheduler_config)
 
     # Add +1 to the block size in order to slice out the next token as the target
