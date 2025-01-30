@@ -87,3 +87,5 @@ venv/
 
 # VS Code
 .vscode/
+assets/model_state.pt
+assets/sigpt.onnx
