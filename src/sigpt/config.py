@@ -48,7 +48,7 @@ def get_optimizer_config() -> OptimizerConfig:
 
 
 def get_scheduler_config() -> SchedulerConfig:
-    return SchedulerConfig(warmup_steps=500, total_steps=600_000, min_lr=6e-5, max_lr=6e-4)
+    return SchedulerConfig(warmup_steps=500, total_steps=50_000, min_lr=6e-5, max_lr=6e-4)
 
 
 def get_gpt_config() -> ModelConfig:
