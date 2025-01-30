@@ -44,3 +44,6 @@ if __name__ == "__main__":
         ddp=ddp,
         is_main_process=is_main_process,
     )
+
+    if is_main_process:
+        wandb.finish()
