@@ -1,4 +1,5 @@
 import dataclasses
+import pathlib
 
 
 @dataclasses.dataclass
@@ -53,3 +54,7 @@ def get_scheduler_config() -> SchedulerConfig:
 
 def get_gpt_config() -> ModelConfig:
     return ModelConfig(block_size=1024, vocab_size=50257, n_layers=12, n_heads=12, n_embed=768)
+
+
+def get_onnx_path() -> pathlib.Path:
+    return pathlib.Path(__file__).parents[2] / "assets" / "sigpt.onnx"

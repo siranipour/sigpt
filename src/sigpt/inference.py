@@ -1,13 +1,15 @@
+import pathlib
+
+import onnxruntime as ort
 import tiktoken
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 from sigpt import architecture, config
 
 
 def generate(
-    model: nn.Module,
+    onnx_path: str | pathlib.Path,
     prompt: str,
     batches: int,
     max_samples: int,
@@ -17,7 +19,8 @@ def generate(
     encoded_prompt = torch.tensor(encoder.encode(prompt), dtype=torch.long)
     encoded_prompt = torch.tile(encoded_prompt, (batches, 1))
 
-    generated_tokens = generate_tokens(model, encoded_prompt, max_samples, k)
+    ort_session = ort.InferenceSession(onnx_path)
+    generated_tokens = generate_tokens(ort_session, encoded_prompt, max_samples, k)
 
     # The generated response will be invalid if the model had generated and
     # eot_token
@@ -27,18 +30,17 @@ def generate(
 
 
 def generate_tokens(
-    model: nn.Module,
+    ort_session: ort.InferenceSession,
     idx: torch.Tensor,
     max_samples: int,
     k: int = 50,
 ) -> torch.Tensor:
     generations = 0
     with torch.no_grad():
-        model.eval()
         while generations < max_samples:
-            logits = model(idx)  # (B, T, vocab_size)
+            (logits,) = ort_session.run(["output"], {"input": idx.numpy()})  # (B, T, vocab_size)
             # We use the last token for prediction
-            logits = logits[:, -1, :]  # (B, vocab_size)
+            logits = torch.tensor(logits[:, -1, :])  # (B, vocab_size)
             probabilities = F.softmax(logits, dim=-1)  # (B, vocab_size)
             top_p, top_p_idx = torch.topk(probabilities, k, dim=-1)  # (B, k)
             gen_idx = torch.multinomial(top_p, num_samples=1)  # (B, 1)
