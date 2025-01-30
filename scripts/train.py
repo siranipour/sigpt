@@ -6,7 +6,7 @@ from sigpt.logging import log
 
 MICRO_BATCH_SIZE: int = 24
 BATCH_SIZE: int = 480
-MAX_ITERS: int = 50_000
+MAX_ITERS: int = 20_000
 EVAL_ITERS: int = 100
 PROJECT_NAME: str = "sigpt"
 RUN_NAME: str = "training-run"
