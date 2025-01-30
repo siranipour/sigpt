@@ -214,7 +214,7 @@ def prepare_optimizer(
     parameters = get_weight_decay_params(model, optimizer_config.weight_decay)
     return optim.AdamW(
         parameters,
-        lr=scheduler_config.max_lr,
+        lr=1, # Base LR to 1 ensures learning rate scheduler is free to return absolute LR
         betas=(optimizer_config.beta1, optimizer_config.beta2),
         fused=True,
     )
