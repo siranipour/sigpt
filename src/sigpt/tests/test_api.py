@@ -1,10 +1,14 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from sigpt import serve
+from sigpt import config, serve
 
 BASE_PROMPT = "Hello, I am a language model and"
 
 
+@pytest.mark.skipif(
+    not config.get_onnx_path().exists(), reason="ONNX artefact must be present for server"
+)
 def test_api():
     client = TestClient(serve.app)
 
