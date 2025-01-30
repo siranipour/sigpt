@@ -33,6 +33,7 @@ def train(
     device: Device,
     model_checkpoint_path: pathlib.Path,
     eval_iters: int,
+    start_idx: int = 0,
     state_path: str | None = None,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
@@ -83,7 +84,9 @@ def train(
     )
     best_val_loss = float("inf")
 
-    for idx in tqdm(range(max_iters)) if is_main_process else range(max_iters):
+    for idx in (
+        tqdm(range(start_idx, max_iters)) if is_main_process else range(start_idx, max_iters)
+    ):
         timer_start = time.time()
         _ = optimizer.zero_grad()
 
