@@ -216,7 +216,8 @@ def prepare_model(
 
 
 def prepare_optimizer(
-    model: nn.Module, optimizer_config: OptimizerConfig, scheduler_config: SchedulerConfig
+    model: nn.Module,
+    optimizer_config: OptimizerConfig,
 ) -> optim.Optimizer:
     parameters = get_weight_decay_params(model, optimizer_config.weight_decay)
     return optim.AdamW(

@@ -135,8 +135,7 @@ def count_trainable_parameters(model: nn.Module) -> int:
 
 
 def load_model_with_state(model: nn.Module, state_path: str) -> nn.Module:
-    state = torch.load(state_path, map_location=torch.device('cpu'), weights_only=True)
-    state = {k.removeprefix('_orig_mod.'): v for k, v in state.items()}
+    state = torch.load(state_path, map_location=torch.device("cpu"), weights_only=True)
+    state = {k.removeprefix("_orig_mod."): v for k, v in state.items()}
     model.load_state_dict(state)
     return model
-
