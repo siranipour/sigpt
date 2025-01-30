@@ -4,6 +4,7 @@ import onnxruntime as ort
 import tiktoken
 import torch
 import torch.nn.functional as F
+from onnxruntime.quantization import quantize_dynamic
 
 from sigpt import architecture, config
 
@@ -85,3 +86,4 @@ def _save_to_onnx(state_path: str, output_path: str) -> None:
             },
         },
     )
+    quantize_dynamic(output_path, output_path + ".quantized")

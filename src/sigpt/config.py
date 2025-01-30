@@ -57,4 +57,4 @@ def get_gpt_config() -> ModelConfig:
 
 
 def get_onnx_path() -> pathlib.Path:
-    return pathlib.Path(__file__).parents[2] / "assets" / "sigpt.onnx"
+    return pathlib.Path(__file__).parents[2] / "assets" / "sigpt.onnx.quantized"

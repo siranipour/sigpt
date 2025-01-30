@@ -49,7 +49,7 @@ jobs:
           registry: 'gcr.io'
 
       - name: Download onnx artifact
-        run: gcloud alpha storage cp gs://sigpt-onnx/sigpt.onnx ./assets/sigpt.onnx
+        run: gcloud alpha storage cp gs://sigpt-onnx/sigpt.onnx.quantized ./assets/sigpt.onnx.quantized
 
       - name: Build and Push Container
         run: |-
