@@ -11,6 +11,7 @@ import torch.optim as optim
 from torch import distributed as dist
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
+from tqdm import tqdm
 
 import wandb
 from sigpt import architecture, data
@@ -81,7 +82,7 @@ def train(
     )
     best_val_loss = float("inf")
 
-    for idx in range(max_iters):
+    for idx in tqdm(range(max_iters)) if is_main_process else range(max_iters):
         timer_start = time.time()
         _ = optimizer.zero_grad()
 

@@ -1286,6 +1286,7 @@ dev = [
 ]
 train = [
     { name = "datasets" },
+    { name = "tqdm" },
     { name = "wandb" },
 ]
 
@@ -1307,6 +1308,7 @@ dev = [
 ]
 train = [
     { name = "datasets", specifier = ">=3.1.0" },
+    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "wandb", specifier = ">=0.19.3" },
 ]
 
