@@ -5,7 +5,9 @@ with this code base is managed by `uv`.
 
 ## Inference
 
-The model can be interacted with using the package's `fastAPI` server. To start the server simply run:
+The model can be interacted with using the package's `fastAPI` server. The
+`onnx` artefact must be fetched from the GCP bucket in order to run the server
+locally. To start the server simply run:
 
 
 ```prompt
