@@ -48,6 +48,9 @@ jobs:
           password: '${{ steps.auth.outputs.access_token }}'
           registry: 'gcr.io'
 
+      - name: Download onnx artifact
+        run: gsutil cp gs://sigpt-onnx/sigpt.onnx ./assets/sigpt.onnx
+
       - name: Build and Push Container
         run: |-
           gcloud auth configure-docker "${{ env.GAR_LOCATION }}-docker.pkg.dev"
