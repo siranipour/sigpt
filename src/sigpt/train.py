@@ -19,7 +19,7 @@ from sigpt.config import DDPConfig, ModelConfig, OptimizerConfig, SchedulerConfi
 from sigpt.env import Device, get_quantized_dtype
 from sigpt.logging import log
 
-EVAL_FREQUENCY: int = 100
+EVAL_FREQUENCY: int = 500
 
 
 def train(
