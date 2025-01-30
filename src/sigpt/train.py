@@ -33,6 +33,7 @@ def train(
     device: Device,
     model_checkpoint_path: pathlib.Path,
     eval_iters: int,
+    state_path: str | None = None,
     ddp: DDPConfig | None = None,
     is_main_process: bool = True,
 ) -> None:
@@ -56,7 +57,7 @@ def train(
     )
     log.info(f"Processing {tokens_per_iter:,} tokens per iteration")
 
-    model = prepare_model(model_config, device, ddp)
+    model = prepare_model(model_config, device, ddp, state_path)
     log.info(f"Using model with {architecture.count_trainable_parameters(model):,} parameters")
 
     if is_main_process:
@@ -193,9 +194,15 @@ def tensor_to_device(t: torch.Tensor, device: Device) -> torch.Tensor:
 
 
 def prepare_model(
-    model_config: ModelConfig, device: Device, ddp: DDPConfig | None = None
+    model_config: ModelConfig,
+    device: Device,
+    ddp: DDPConfig | None = None,
+    state_path: str | None = None,
 ) -> nn.Module:
     model = architecture.Transformer(model_config)
+    if state_path is not None:
+        log.info(f"Initializing model with state from {pathlib.Path(state_path).resolve()}")
+        model = architecture.load_model_with_state(model, state_path)
     model.train()
     if device != Device.MPS:
         log.info("Compiling model")
@@ -214,7 +221,7 @@ def prepare_optimizer(
     parameters = get_weight_decay_params(model, optimizer_config.weight_decay)
     return optim.AdamW(
         parameters,
-        lr=1, # Base LR to 1 ensures learning rate scheduler is free to return absolute LR
+        lr=1,  # Base LR to 1 ensures learning rate scheduler is free to return absolute LR
         betas=(optimizer_config.beta1, optimizer_config.beta2),
         fused=True,
     )
