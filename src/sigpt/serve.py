@@ -2,6 +2,7 @@ import dataclasses
 
 from better_profanity import profanity
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from sigpt import config, inference
 
@@ -17,9 +18,24 @@ class ModelResponse:
 
 app = FastAPI()
 
+origins = [
+    "https://siranipour.io",
+]
+origins_regex = "http://localhost:.*"
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=origins_regex,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.post("/sigpt/")
-def generate_tokens(
+async def generate_tokens(
     prompt: str,
     batches: int = 1,
     max_len: int = 20,
