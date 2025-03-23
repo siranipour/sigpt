@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Check formatting with ruff
-        run: uv run ruff format -l 100 --check .
+        run: uv run ruff format --check .
       - name: Check linting
         run: uv run ruff check
       - name: Test with python ${{ matrix.python-version }}
