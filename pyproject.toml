@@ -20,6 +20,9 @@ cpu = [
   "torch",
 ]
 
+[tool.ruff]
+line-length = 100
+
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", extra = "cpu" },
